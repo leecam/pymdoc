@@ -1,8 +1,9 @@
 import os
 import cbor2
-
+import codecs
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.types import PrivateKeyTypes, PublicKeyTypes
+from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.x509 import Certificate
@@ -55,9 +56,10 @@ class MDoc:
                 issuer_item["elementIdentifier"] = item["identifier"]
                 issuer_item["elementValue"] = item["value"]
                 issuer_item_bytes = cbor2.dumps(issuer_item)
-                namespace_items.append(cbor2.CBORTag(24, issuer_item_bytes))
+                item_tag = cbor2.CBORTag(24, issuer_item_bytes)
+                namespace_items.append(item_tag)
                 # TODO: Support the other digest algos
-                namespace_digests[digest_id] = sha256(issuer_item_bytes).digest()
+                namespace_digests[digest_id] = sha256(cbor2.dumps(item_tag)).digest()
 
                 digest_id = digest_id + 1
 
@@ -79,12 +81,12 @@ class MDoc:
         validity_info["validUntil"] = valid_until_datetime
         if expected_update_datetime is not None:
             validity_info["expectedUpdate"] = expected_update_datetime
-        mso["ValidityInfo"] = validity_info
+        mso["validityInfo"] = validity_info
 
         mso_bytes = cbor2.dumps(cbor2.CBORTag(24, cbor2.dumps(mso)))
 
         # Create the COSESign1
-        protected = {1, -7}  # alg is ECDSA SHA256
+        protected = cbor2.dumps({1: -7})  # alg is ECDSA SHA256
         unprotected = None
         if len(self.issuer_cert_chain) == 1:
             cert = self.issuer_cert_chain[0]
@@ -98,11 +100,15 @@ class MDoc:
         sig_structure.append(b"")
         sig_structure.append(mso_bytes)
 
-        signature = self.issuer_private_key.sign(
+        signature_der = self.issuer_private_key.sign(
             cbor2.dumps(sig_structure), ec.ECDSA(hashes.SHA256())
         )
 
-        issuer_auth = [protected, unprotected, mso_bytes, signature]
+        r, s = decode_dss_signature(signature_der)
+        rhex = codecs.decode("{:064x}".format(r), "hex")
+        shex = codecs.decode("{:064x}".format(s), "hex")
+
+        issuer_auth = [protected, unprotected, mso_bytes, rhex + shex]
 
         issuer_signed["issuerAuth"] = issuer_auth
         return cbor2.dumps(issuer_signed)
