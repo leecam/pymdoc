@@ -1,6 +1,10 @@
 [project]
 name = "isomdoc"
-version = "0.0.2"
+dependencies = [
+  "cbor2",
+  "cryptography"
+]
+version = "0.0.3"
 authors = [
   { name="Lee Campbell", email="leecam@google.com" },
 ]
