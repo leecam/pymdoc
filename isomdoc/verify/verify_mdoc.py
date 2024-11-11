@@ -197,18 +197,34 @@ class IssuerSigned:
                     )
                 self.namespaces[namespace] = parsed_elements
 
+    def get_element_value(self, namespace: str, element_identifier: str) -> MDocDataTypes:
+        elements = self.namespaces.get(namespace, None)
+        if elements is None:
+            return None
+        for element in elements:
+            if element.element_identifier == element_identifier:
+                return element.element_value
+        return None
+
 
 @dataclass
 class DeviceSigned:
     namespaces: dict
     device_signature_algorithm: DeviceSignatureAlgorithm
 
-    def __init__(self, device_signed: dict, doctype: str, device_public_key: PublicKeyTypes):
+    def __init__(
+        self,
+        device_signed: dict,
+        doctype: str,
+        device_public_key: PublicKeyTypes,
+        session_transcript: bytes,
+    ):
 
         if "nameSpaces" not in device_signed:
             raise RuntimeError("deviceSigned must contain nameSpaces")
 
         namespace_tag = device_signed["nameSpaces"]
+        # TODO: Check the structure of this to make sure it matches the spec
         self.namespaces = cbor2.loads(namespace_tag.value)
         if not isinstance(namespace_tag, cbor2.CBORTag):
             raise RuntimeError("deviceSigned nameSpaces not a cbor tag")
@@ -247,7 +263,12 @@ class DeviceSigned:
             raise RuntimeError("deviceSignature COSE_Sign1 payload is not null")
 
         # Check the device signature
-        device_authentication = ["DeviceAuthentication", None, doctype, cbor2.dumps(namespace_tag)]
+        device_authentication = [
+            "DeviceAuthentication",
+            session_transcript,
+            doctype,
+            cbor2.dumps(namespace_tag),
+        ]
 
         device_authentication_bytes = cbor2.dumps(
             cbor2.CBORTag(24, cbor2.dumps(device_authentication))
@@ -263,9 +284,9 @@ class DeviceSigned:
         r = int(codecs.encode(signature[:32], "hex"), 16)
         s = int(codecs.encode(signature[32:], "hex"), 16)
         der_encoded_signature = encode_dss_signature(r, s)
-        # device_public_key.verify(
-        #     der_encoded_signature, cbor2.dumps(sig_structure), ec.ECDSA(hashes.SHA256())
-        # )
+        device_public_key.verify(
+            der_encoded_signature, cbor2.dumps(sig_structure), ec.ECDSA(hashes.SHA256())
+        )
 
 
 @dataclass
@@ -274,7 +295,7 @@ class Document:
     issuer_signed: IssuerSigned
     device_signed: DeviceSigned
 
-    def __init__(self, document: dict):
+    def __init__(self, document: dict, session_transcript: bytes):
         if "docType" not in document:
             raise RuntimeError("Document must contain docType")
         self.doctype = document["docType"]
@@ -284,7 +305,10 @@ class Document:
         if "deviceSigned" not in document:
             raise RuntimeError("Document must contain deviceSigned")
         self.device_signed = DeviceSigned(
-            document["deviceSigned"], self.doctype, self.issuer_signed.device_key
+            document["deviceSigned"],
+            self.doctype,
+            self.issuer_signed.device_key,
+            session_transcript,
         )
 
 
@@ -292,7 +316,7 @@ class Document:
 class DeviceResponse:
     documents: Document
 
-    def __init__(self, device_response: bytes):
+    def __init__(self, device_response: bytes, session_transcript: bytes):
         self.documents = []
 
         device_response_dict = cbor2.loads(device_response)
@@ -311,8 +335,10 @@ class DeviceResponse:
         if "documents" not in device_response_dict:
             return
 
-        self.documents = [Document(doc) for doc in device_response_dict["documents"]]
+        self.documents = [
+            Document(doc, session_transcript) for doc in device_response_dict["documents"]
+        ]
 
 
-def verify_device_response(device_response: bytes) -> DeviceResponse:
-    return DeviceResponse(device_response)
+def verify_device_response(device_response: bytes, session_transcript: bytes) -> DeviceResponse:
+    return DeviceResponse(device_response, session_transcript)
