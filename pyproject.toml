@@ -18,5 +18,5 @@ Homepage = "https://github.com/leecam/pymdoc"
 Repository = "https://github.com/leecam/pymdoc.git"
 Issues = "https://github.com/leecam/pymdoc/issues"
 
-[tool.setuptools]
-py-modules = ["isomdoc"]
+[tool.setuptools.packages.find]
+exclude = ["testdata"]
