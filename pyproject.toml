@@ -1,0 +1,23 @@
+[project]
+name = "isomdoc"
+version = "0.0.1"
+authors = [
+  { name="Lee Campbell", email="leecam@google.com" },
+]
+description = "A python module to create and verify ISO mdocs"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/leecam/pymdoc"
+Repository = "https://github.com/leecam/pymdoc.git"
+Issues = "https://github.com/leecam/pymdoc/issues"
+
+[tool.setuptools]
+py-modules = ["isomdoc"]
