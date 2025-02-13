@@ -217,7 +217,7 @@ class DeviceSigned:
         device_signed: dict,
         doctype: str,
         device_public_key: PublicKeyTypes,
-        session_transcript: bytes,
+        session_transcript: list,
     ):
 
         if "nameSpaces" not in device_signed:
@@ -267,7 +267,7 @@ class DeviceSigned:
             "DeviceAuthentication",
             session_transcript,
             doctype,
-            cbor2.dumps(namespace_tag),
+            namespace_tag,
         ]
 
         device_authentication_bytes = cbor2.dumps(
@@ -295,7 +295,7 @@ class Document:
     issuer_signed: IssuerSigned
     device_signed: DeviceSigned
 
-    def __init__(self, document: dict, session_transcript: bytes):
+    def __init__(self, document: dict, session_transcript: list):
         if "docType" not in document:
             raise RuntimeError("Document must contain docType")
         self.doctype = document["docType"]
@@ -316,7 +316,7 @@ class Document:
 class DeviceResponse:
     documents: Document
 
-    def __init__(self, device_response: bytes, session_transcript: bytes):
+    def __init__(self, device_response: bytes, session_transcript: list):
         self.documents = []
 
         device_response_dict = cbor2.loads(device_response)
@@ -340,5 +340,5 @@ class DeviceResponse:
         ]
 
 
-def verify_device_response(device_response: bytes, session_transcript: bytes) -> DeviceResponse:
+def verify_device_response(device_response: bytes, session_transcript: list) -> DeviceResponse:
     return DeviceResponse(device_response, session_transcript)
