@@ -39,7 +39,7 @@ See **examples/verify_mdoc.py** for an example of verifying an mdoc DeviceRespon
 You can run the example with the following:
 ```sh
 # See "Development" for venv setup instructions
-venv $> python -m examples.verify_mdl testdata/issuer_cert.pem testdata/issuer_private_key.pem testdata/device_public_key.pem testdata/device_private_key.pem
+venv $> python -m examples.verify_mdoc testdata/issuer_cert.pem testdata/issuer_private_key.pem testdata/device_public_key.pem testdata/device_private_key.pem
 ```
 
 ### Test data
