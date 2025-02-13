@@ -14,7 +14,7 @@ mdl.add_data_item("org.iso.18013.5.1", "age_over_21", "True")
 issuer_signed = mdl.generate_credential(device_public_key)
 
 # Generate a device response, this would normally be created by the device's wallet.
-session_transcript = bytes(10)
+session_transcript = [None, None, ["handover", bytes(10)]]
 device_response = generate_device_response(
     "org.iso.18013.5.1.mDL", issuer_signed, device_private_key, session_transcript
 )

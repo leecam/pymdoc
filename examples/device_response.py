@@ -14,7 +14,7 @@ def generate_device_response(doctype, issuer_signed, device_private_key, session
         "DeviceAuthentication",
         session_transcript,
         doctype,
-        cbor2.dumps(namespace_tag),
+        namespace_tag,
     ]
 
     device_authentication_bytes = cbor2.dumps(
