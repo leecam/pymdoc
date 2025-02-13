@@ -4,7 +4,7 @@ dependencies = [
   "cbor2",
   "cryptography"
 ]
-version = "0.0.3"
+version = "0.0.4"
 authors = [
   { name="Lee Campbell", email="leecam@google.com" },
 ]
