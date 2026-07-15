@@ -13,6 +13,13 @@ from isomdoc.internal import to_cose_public_key, MDocDataTypes
 from typing import List, Optional
 
 
+def _to_tdate(value: datetime) -> datetime:
+    """Normalize a datetime for use as an ISO 18013-5 tdate.
+    """
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc).replace(microsecond=0)
+
 class MDoc:
     def __init__(
         self,
@@ -74,13 +81,12 @@ class MDoc:
         mso["docType"] = self.doctype
         mso["valueDigests"] = value_digests
         mso["deviceKeyInfo"] = {"deviceKey": to_cose_public_key(device_public_key)}
-        # TODO: Make sure these are all tdate
         validity_info = {}
-        validity_info["signed"] = signed_datetime
-        validity_info["validFrom"] = valid_from_datetime
-        validity_info["validUntil"] = valid_until_datetime
+        validity_info["signed"] = _to_tdate(signed_datetime)
+        validity_info["validFrom"] = _to_tdate(valid_from_datetime)
+        validity_info["validUntil"] = _to_tdate(valid_until_datetime)
         if expected_update_datetime is not None:
-            validity_info["expectedUpdate"] = expected_update_datetime
+            validity_info["expectedUpdate"] = _to_tdate(expected_update_datetime)
         mso["validityInfo"] = validity_info
 
         mso_bytes = cbor2.dumps(cbor2.CBORTag(24, cbor2.dumps(mso)))
